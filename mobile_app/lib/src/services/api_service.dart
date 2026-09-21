@@ -18,7 +18,7 @@ class ApiService {
     return error.type == DioExceptionType.connectionTimeout ||
         error.type == DioExceptionType.connectionError ||
         error.type == DioExceptionType.receiveTimeout ||
-        (error.response?.statusCode == 302);
+        error.response?.statusCode == 302;
   }
 
   static Future<Response<T>> requestWithFallback<T>(
@@ -38,7 +38,6 @@ class ApiService {
     }
 
     final originalBaseUrl = dio.options.baseUrl;
-
     try {
       for (var index = 0; index < baseUrls.length; index++) {
         try {
@@ -85,8 +84,7 @@ class ApiService {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
         },
-        followRedirects:
-            false, // temporarily disable following redirects to surface 3xx responses
+        followRedirects: false,
         validateStatus: (status) => status != null && status < 500,
       ),
     );
@@ -111,20 +109,6 @@ class ApiService {
         responseBody: true,
         requestHeader: false,
         responseHeader: false,
-      ),
-    );
-
-    dio.interceptors.add(
-      InterceptorsWrapper(
-        onRequest: (options, handler) async {
-          final token = await (secureStorage ?? FlutterSecureStorage()).read(
-            key: 'jwt_token',
-          );
-          if (token != null && token.isNotEmpty) {
-            options.headers['Authorization'] = 'Bearer $token';
-          }
-          handler.next(options);
-        },
       ),
     );
 
