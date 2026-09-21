@@ -25,6 +25,13 @@ use App\Http\Controllers\LocationController;
 |
 */
 
+Route::get('health', function () {
+    return response()->json([
+        'status' => 'ok',
+        'message' => 'API is working',
+    ]);
+});
+
 Route::prefix('auth')->group(function () {
     // Public routes
     Route::post('register/customer', [AuthController::class, 'registerCustomer']);
