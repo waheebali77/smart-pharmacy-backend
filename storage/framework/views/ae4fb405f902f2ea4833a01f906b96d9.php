@@ -1,0 +1,47 @@
+
+
+<?php $__env->startSection('content'); ?>
+<div class="d-flex flex-wrap align-items-end justify-content-between gap-3 mb-4">
+    <div><div class="eyebrow"><?php echo e(__('admin.global_templates')); ?></div><h1 class="page-title mb-1"><?php echo e(__('admin.medicine_catalog')); ?></h1><p class="text-secondary mb-0"><?php echo e(__('admin.Manage common medicines available as predefined templates for pharmacy owners.')); ?></p></div>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#medicineModal"><i class="bi bi-plus-lg me-1"></i><?php echo e(__('admin.add_medicine')); ?></button>
+</div>
+
+<div class="card p-3 mb-4">
+    <form class="row g-2 align-items-end" method="GET" action="<?php echo e(route('admin.medicine-catalog')); ?>">
+        <div class="col-lg-4"><label class="form-label small text-secondary"><?php echo e(__('admin.search_medicines')); ?></label><input class="form-control" name="q" value="<?php echo e(request('q')); ?>" placeholder="<?php echo e(__('admin.search_medicines')); ?>..." /></div>
+        <div class="col-md-3 col-lg-2"><label class="form-label small text-secondary">Category</label><select class="form-select" name="category_id"><option value="">All categories</option><?php $__currentLoopData = $categories; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $category): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?><option value="<?php echo e($category->id); ?>" <?php if((string) request('category_id') === (string) $category->id): echo 'selected'; endif; ?>><?php echo e($category->name); ?></option><?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?></select></div>
+        <div class="col-md-3 col-lg-2"><label class="form-label small text-secondary">Status</label><select class="form-select" name="status"><option value="">All statuses</option><option value="active" <?php if(request('status') === 'active'): echo 'selected'; endif; ?>>Active</option><option value="inactive" <?php if(request('status') === 'inactive'): echo 'selected'; endif; ?>>Inactive</option></select></div>
+        <div class="col-md-3 col-lg-2"><label class="form-label small text-secondary">Prescription</label><select class="form-select" name="prescription"><option value="">All medicines</option><option value="1" <?php if(request('prescription') === '1'): echo 'selected'; endif; ?>>Required</option><option value="0" <?php if(request('prescription') === '0'): echo 'selected'; endif; ?>>Not required</option></select></div>
+        <div class="col-md-auto"><button class="btn btn-outline-secondary"><i class="bi bi-search me-1"></i>Filter</button></div>
+    </form>
+</div>
+
+<div class="card p-3 p-lg-4">
+    <div class="d-flex justify-content-between align-items-center mb-3"><div><h2 class="h5 mb-1">Catalog medicines</h2><div class="small text-secondary"><?php echo e($items->total()); ?> global templates</div></div><span class="badge bg-light text-dark">Pharmacy inventory is managed separately</span></div>
+    <div class="table-responsive"><table class="table align-middle"><thead><tr><th>Image</th><th>Medicine name</th><th>Generic name</th><th>Category</th><th>Strength</th><th>Dosage form</th><th>Prescription</th><th>Status</th><th class="text-end">Actions</th></tr></thead><tbody>
+    <?php $__empty_1 = true; $__currentLoopData = $items; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+    <tr>
+        <td><?php if($item->image_path): ?><img src="<?php echo e(url(ltrim($item->image_path, '/'))); ?>" alt="<?php echo e($item->name); ?>" class="catalog-thumb"><?php else: ?><div class="catalog-placeholder"><i class="bi bi-capsule"></i></div><?php endif; ?></td>
+        <td><strong><?php echo e($item->name); ?></strong><div class="small text-secondary"><?php echo e($item->manufacturer ?: 'Manufacturer not specified'); ?></div></td><td><?php echo e($item->generic_name ?: '—'); ?></td><td><?php echo e($item->category?->name ?: '—'); ?></td><td><?php echo e($item->strength ?: '—'); ?></td><td><?php echo e($item->dosage_form ?: '—'); ?></td>
+        <td><?php if($item->requires_prescription): ?><span class="badge bg-warning-subtle text-warning-emphasis">Required</span><?php else: ?><span class="text-secondary">No</span><?php endif; ?></td>
+        <td><span class="badge <?php echo e($item->is_available ? 'badge-open' : 'badge-closed'); ?>"><?php echo e($item->is_available ? 'Active' : 'Inactive'); ?></span></td>
+        <td class="text-end text-nowrap"><button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#viewModal<?php echo e($item->id); ?>" title="View"><i class="bi bi-eye"></i></button> <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editMedicine<?php echo e($item->id); ?>" title="Edit"><i class="bi bi-pencil"></i></button> <form class="d-inline" method="POST" action="<?php echo e(route('admin.medicine-catalog.status', $item)); ?>"><?php echo csrf_field(); ?> <?php echo method_field('PATCH'); ?><button class="btn btn-sm btn-outline-success" title="Activate or deactivate"><i class="bi bi-power"></i></button></form> <form class="d-inline" method="POST" action="<?php echo e(route('admin.medicine-catalog.destroy', $item)); ?>" onsubmit="return confirm('Delete this catalog medicine? This cannot be undone.')"><?php echo csrf_field(); ?> <?php echo method_field('DELETE'); ?><button class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button></form></td>
+    </tr>
+    <div class="modal fade" id="viewModal<?php echo e($item->id); ?>" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title"><?php echo e($item->name); ?></h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><p class="text-secondary"><?php echo e($item->description ?: 'No description provided.'); ?></p><dl class="row mb-0"><dt class="col-5">Generic name</dt><dd class="col-7"><?php echo e($item->generic_name ?: '—'); ?></dd><dt class="col-5">Manufacturer</dt><dd class="col-7"><?php echo e($item->manufacturer ?: '—'); ?></dd><dt class="col-5">Barcode</dt><dd class="col-7"><?php echo e($item->barcode ?: '—'); ?></dd><dt class="col-5">Prescription</dt><dd class="col-7"><?php echo e($item->requires_prescription ? 'Required' : 'Not required'); ?></dd></dl><div class="alert alert-info mt-3 mb-0 small">This is a global template. It is not pharmacy inventory until an owner adds it.</div></div></div></div></div>
+    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?><tr><td colspan="9" class="text-center text-secondary py-5">No catalog medicines match these filters.</td></tr><?php endif; ?>
+    </tbody></table></div><?php echo e($items->links()); ?>
+
+</div>
+
+<div class="modal fade" id="medicineModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Add catalog medicine</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><form method="POST" action="<?php echo e(route('admin.medicine-catalog.store')); ?>" enctype="multipart/form-data"><div class="modal-body"><?php echo csrf_field(); ?> <?php echo $__env->make('admin.partials.catalog-medicine-fields', ['item' => null], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?></div><div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button><button class="btn btn-primary"><i class="bi bi-check2 me-1"></i>Create template</button></div></form></div></div></div>
+
+<?php $__currentLoopData = $items; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+<div class="modal fade" id="editMedicine<?php echo e($item->id); ?>" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Edit catalog medicine</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><form method="POST" action="<?php echo e(route('admin.medicine-catalog.update', $item)); ?>" enctype="multipart/form-data"><div class="modal-body"><?php echo csrf_field(); ?> <?php echo method_field('PATCH'); ?> <?php echo $__env->make('admin.partials.catalog-medicine-fields', ['item' => $item], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?></div><div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button><button class="btn btn-primary">Save changes</button></div></form></div></div></div>
+<?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+<?php $__env->stopSection(); ?>
+
+<?php $__env->startPush('scripts'); ?>
+<style>.catalog-thumb,.catalog-placeholder{width:48px;height:48px;border-radius:10px;object-fit:cover}.catalog-placeholder{display:grid;place-items:center;background:var(--mint);color:var(--teal);font-size:1.25rem}.table td{min-width:90px}</style>
+<?php $__env->stopPush(); ?>
+
+<?php echo $__env->make('admin.layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\Users\Lenovo\Desktop\Smart Pharmacy System\resources\views/admin/medicine-catalog.blade.php ENDPATH**/ ?>

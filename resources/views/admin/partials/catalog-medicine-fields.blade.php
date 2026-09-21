@@ -1,0 +1,13 @@
+@php($editing = $item !== null)
+<div class="row g-3">
+    <div class="col-md-6"><label class="form-label">{{ __('admin.medicine_name') }} <span class="text-danger">*</span></label><input class="form-control" name="name" value="{{ old('name', $item?->name) }}" required></div>
+    <div class="col-md-6"><label class="form-label">{{ __('admin.generic_name') }}</label><input class="form-control" name="generic_name" value="{{ old('generic_name', $item?->generic_name) }}"></div>
+    <div class="col-md-6"><label class="form-label">Category <span class="text-danger">*</span></label><select class="form-select" name="category_id" required><option value="">Choose category</option>@foreach($categories as $category)<option value="{{ $category->id }}" @selected((string) old('category_id', $item?->category_id) === (string) $category->id)>{{ $category->name }}</option>@endforeach</select></div>
+    <div class="col-md-6"><label class="form-label">Manufacturer</label><input class="form-control" name="manufacturer" value="{{ old('manufacturer', $item?->manufacturer) }}"></div>
+    <div class="col-md-6"><label class="form-label">Dosage form</label><input class="form-control" name="dosage_form" placeholder="Tablet, syrup, cream..." value="{{ old('dosage_form', $item?->dosage_form) }}"></div>
+    <div class="col-md-6"><label class="form-label">Strength</label><input class="form-control" name="strength" placeholder="500mg" value="{{ old('strength', $item?->strength) }}"></div>
+    <div class="col-md-6"><label class="form-label">Barcode</label><input class="form-control" name="barcode" value="{{ old('barcode', $item?->barcode) }}"></div>
+    <div class="col-md-6"><label class="form-label">Medicine image</label><input class="form-control" type="file" name="image" accept="image/jpeg,image/png,image/gif,image/webp">@if($item?->image_path)<div class="small text-secondary mt-1">Existing image will be kept unless replaced.</div>@endif</div>
+    <div class="col-12"><label class="form-label">Description</label><textarea class="form-control" name="description" rows="3">{{ old('description', $item?->description) }}</textarea></div>
+    <div class="col-12"><div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="requires_prescription" value="1" @checked(old('requires_prescription', $item?->requires_prescription))><label class="form-check-label">Requires prescription</label></div><div class="form-check form-switch mt-2"><input class="form-check-input" type="checkbox" name="is_available" value="1" @checked(old('is_available', $item?->is_available ?? true))><label class="form-check-label">Active catalog template</label></div></div>
+</div>

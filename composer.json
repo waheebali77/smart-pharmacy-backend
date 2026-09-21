@@ -1,0 +1,13 @@
+{
+    "require": {
+        "tymon/jwt-auth": "^2.3",
+        "laravel/framework": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/",
+            "Database\\Factories\\": "database/factories/",
+            "Database\\Seeders\\": "database/seeders/"
+        }
+    }
+}

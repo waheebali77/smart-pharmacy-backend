@@ -1,0 +1,3 @@
+<div class="mb-3"><label class="form-label">Arabic name</label><input class="form-control" name="name_ar" value="<?php echo e(old('name_ar', $governorate?->name_ar)); ?>" required></div>
+<div><label class="form-label">English name</label><input class="form-control" name="name_en" value="<?php echo e(old('name_en', $governorate?->name_en)); ?>" required></div>
+<?php /**PATH C:\Users\Lenovo\Desktop\Smart Pharmacy System\resources\views/admin/governorate-form.blade.php ENDPATH**/ ?>
