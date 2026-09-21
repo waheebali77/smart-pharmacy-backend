@@ -71,7 +71,9 @@ class ApiService {
   }) {
     final baseUrls = _normalizeBaseUrls(baseUrl);
     final effectiveBaseUrl =
-        baseUrls.isNotEmpty ? baseUrls.first : 'http://10.0.2.2:8000/api';
+        baseUrls.isNotEmpty
+            ? baseUrls.first
+            : 'https://smart-pharmacy-backend-1.onrender.com/api';
 
     final dio = Dio(
       BaseOptions(

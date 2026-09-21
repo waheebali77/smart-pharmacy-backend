@@ -57,13 +57,9 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // LDPlayer reaches the development machine through its LAN address.
-    // Keep emulator and host-loopback fallbacks for other Android targets.
-    // ApiService.requestWithFallback will try each base URL in order.
     const apiBaseUrl = String.fromEnvironment(
       'API_BASE_URL',
-      defaultValue:
-          'http://192.168.0.164:8000/api,http://10.0.2.2:8000/api,http://127.0.0.1:8000/api',
+      defaultValue: 'https://smart-pharmacy-backend-1.onrender.com/api',
     );
 
     final secureStorage = FlutterSecureStorage();
@@ -89,9 +85,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ThemeController()),
         Provider<CustomerService>(create: (_) => customerService),
         Provider<OwnerService>(create: (_) => ownerService),
-        Provider<LocationService>(
-          create: (_) => LocationService(dio),
-        ),
+        Provider<LocationService>(create: (_) => LocationService(dio)),
       ],
       child: Consumer<ThemeController>(
         builder: (context, theme, _) {
@@ -110,8 +104,8 @@ class MyApp extends StatelessWidget {
                 const [Locale('en'), Locale('ar')],
             localizationsDelegates: localization?.delegates,
             routes: {
-              '/pricing-carousel': (_) =>
-                  PricingCarouselScreen(ownerService: ownerService),
+              '/pricing-carousel':
+                  (_) => PricingCarouselScreen(ownerService: ownerService),
             },
             builder:
                 (context, child) => Directionality(
@@ -171,10 +165,7 @@ class MyApp extends StatelessWidget {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(
-                    color: primaryColor,
-                    width: 2,
-                  ),
+                  borderSide: BorderSide(color: primaryColor, width: 2),
                 ),
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,
@@ -253,10 +244,7 @@ class MyApp extends StatelessWidget {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(
-                    color: primaryColor,
-                    width: 2,
-                  ),
+                  borderSide: BorderSide(color: primaryColor, width: 2),
                 ),
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,

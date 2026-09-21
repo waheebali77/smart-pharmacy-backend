@@ -4,14 +4,14 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
-use App\Models\User;
+use App\Models\AppUser;
 
 class UserSeeder extends Seeder
 {
     public function run(): void
     {
         // Create a pharmacy owner user
-        $owner = User::create([
+        AppUser::updateOrCreate(['email' => 'owner@example.com'], [
             'name' => 'John Pharmacy Owner',
             'email' => 'owner@example.com',
             'password' => Hash::make('password'),
@@ -19,7 +19,7 @@ class UserSeeder extends Seeder
         ]);
 
         // Create a customer user
-        $customer = User::create([
+        AppUser::updateOrCreate(['email' => 'customer@example.com'], [
             'name' => 'Jane Customer',
             'email' => 'customer@example.com',
             'password' => Hash::make('password'),
@@ -27,7 +27,7 @@ class UserSeeder extends Seeder
         ]);
 
         // Create test user for mobile app
-        $testUser1 = User::create([
+        AppUser::updateOrCreate(['email' => 'wa@gmail.com'], [
             'name' => 'Test User 1',
             'email' => 'wa@gmail.com',
             'password' => Hash::make('111111111'),
@@ -35,7 +35,7 @@ class UserSeeder extends Seeder
         ]);
 
         // Create another test user for mobile app
-        $testUser2 = User::create([
+        AppUser::updateOrCreate(['email' => 'aw@gmail.com'], [
             'name' => 'Test User 2',
             'email' => 'aw@gmail.com',
             'password' => Hash::make('111111111'),

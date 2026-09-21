@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\User;
+use App\Models\AppUser;
 use App\Models\Pharmacy;
 
 class PharmacySeeder extends Seeder
@@ -11,10 +11,10 @@ class PharmacySeeder extends Seeder
     public function run(): void
     {
         // Get the pharmacy owner user (role pharmacy_owner)
-        $owner = User::where('role', 'pharmacy_owner')->first();
+        $owner = AppUser::where('role', 'pharmacy_owner')->first();
 
         if ($owner) {
-            Pharmacy::create([
+            Pharmacy::updateOrCreate(['user_id' => $owner->id], [
                 'user_id' => $owner->id,
                 'name' => 'HealthPlus Pharmacy',
                 'address' => '123 Main Street, Anytown, USA',
