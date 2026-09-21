@@ -14,7 +14,10 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        if (env('APP_ENV') !== 'local') {
+        $isBehindHttpsProxy =
+            request()->header('X-Forwarded-Proto') === 'https';
+
+        if (app()->environment('production') || $isBehindHttpsProxy) {
             URL::forceScheme('https');
         }
     }
