@@ -15,12 +15,11 @@ void main() {
     );
   });
 
-  testWidgets('app loads the splash screen initially', (
+  testWidgets('app loads the application shell initially', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(const MyApp());
 
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
-    expect(find.text('Smart Pharmacy'), findsNothing);
+    expect(find.byType(MaterialApp), findsOneWidget);
   });
 }

@@ -72,6 +72,7 @@ class AuthService {
     final token = _extractToken(response);
     await secureStorage.write(key: _tokenKey, value: token);
     _setAuthorizationHeader(token);
+    dio.options.headers['Authorization'] = ['Bearer', token].join(' ');
     return token;
   }
 
@@ -98,7 +99,6 @@ class AuthService {
     if (user is! Map) {
       throw Exception('Profile update response did not include user data');
     }
-
     return User.fromJson(Map<String, dynamic>.from(user));
   }
 
@@ -198,6 +198,9 @@ class AuthService {
   Future<String?> getToken() async {
     final token = await secureStorage.read(key: _tokenKey);
     _setAuthorizationHeader(token);
+    if (token != null && token.isNotEmpty) {
+      dio.options.headers['Authorization'] = ['Bearer', token].join(' ');
+    }
     return token;
   }
 
@@ -217,7 +220,6 @@ class AuthService {
       final decoded = jsonDecode(raw);
       if (decoded is Map) return Map<String, dynamic>.from(decoded);
     }
-
     throw Exception('Unexpected auth response format: $raw');
   }
 
@@ -263,7 +265,6 @@ class AuthService {
     if (message is String && message.trim().isNotEmpty) {
       throw Exception(message.trim());
     }
-
     throw Exception('Authentication response did not include a token');
   }
 }

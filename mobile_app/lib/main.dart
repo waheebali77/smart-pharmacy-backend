@@ -63,25 +63,25 @@ class MyApp extends StatelessWidget {
     );
 
     final secureStorage = FlutterSecureStorage();
+    late AuthProvider authProvider;
     final dio =
         ApiService.create(
           baseUrl: apiBaseUrl,
           secureStorage: secureStorage,
+          onUnauthorized: () => authProvider.handleUnauthorized(),
         ).dio;
 
     final authService = AuthService(dio: dio, secureStorage: secureStorage);
+    authProvider = AuthProvider(
+      authService: authService,
+      secureStorage: secureStorage,
+    );
     final customerService = CustomerService(dio);
     final ownerService = OwnerService(dio);
 
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(
-          create:
-              (_) => AuthProvider(
-                authService: authService,
-                secureStorage: secureStorage,
-              ),
-        ),
+        ChangeNotifierProvider.value(value: authProvider),
         ChangeNotifierProvider(create: (_) => ThemeController()),
         Provider<CustomerService>(create: (_) => customerService),
         Provider<OwnerService>(create: (_) => ownerService),

@@ -110,6 +110,13 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> handleUnauthorized() async {
+    await authService.logout();
+    _isAuthenticated = false;
+    _user = null;
+    notifyListeners();
+  }
+
   Future<void> deleteAccount() async {
     await authService.deleteAccount();
     _isAuthenticated = false;

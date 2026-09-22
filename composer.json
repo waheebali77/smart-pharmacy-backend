@@ -1,7 +1,8 @@
 {
     "require": {
         "tymon/jwt-auth": "^2.3",
-        "laravel/framework": "*"
+        "laravel/framework": "*",
+        "laravel/tinker": "^3.0"
     },
     "autoload": {
         "psr-4": {

@@ -3,23 +3,22 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class ApiService {
   final Dio dio;
+  final Future<void> Function()? onUnauthorized;
 
-  ApiService._internal(this.dio);
+  ApiService._internal(this.dio, this.onUnauthorized);
 
-  static List<String> _normalizeBaseUrls(String baseUrl) {
-    return baseUrl
-        .split(',')
-        .map((value) => value.trim())
-        .where((value) => value.isNotEmpty)
-        .toList();
-  }
+  static List<String> _normalizeBaseUrls(String baseUrl) =>
+      baseUrl
+          .split(',')
+          .map((value) => value.trim())
+          .where((value) => value.isNotEmpty)
+          .toList();
 
-  static bool _shouldRetry(DioException error) {
-    return error.type == DioExceptionType.connectionTimeout ||
-        error.type == DioExceptionType.connectionError ||
-        error.type == DioExceptionType.receiveTimeout ||
-        error.response?.statusCode == 302;
-  }
+  static bool _shouldRetry(DioException error) =>
+      error.type == DioExceptionType.connectionTimeout ||
+      error.type == DioExceptionType.connectionError ||
+      error.type == DioExceptionType.receiveTimeout ||
+      error.response?.statusCode == 302;
 
   static Future<Response<T>> requestWithFallback<T>(
     Dio dio,
@@ -67,6 +66,7 @@ class ApiService {
   static ApiService create({
     required String baseUrl,
     FlutterSecureStorage? secureStorage,
+    Future<void> Function()? onUnauthorized,
   }) {
     final baseUrls = _normalizeBaseUrls(baseUrl);
     final effectiveBaseUrl =
@@ -85,9 +85,22 @@ class ApiService {
           'Content-Type': 'application/json',
         },
         followRedirects: false,
-        validateStatus: (status) => status != null && status < 500,
+        validateStatus: (status) => status != null && status < 400,
       ),
     );
+
+    var handlingUnauthorized = false;
+    Future<void> handleUnauthorized(bool isUnauthorized) async {
+      if (!isUnauthorized || onUnauthorized == null || handlingUnauthorized) {
+        return;
+      }
+      handlingUnauthorized = true;
+      try {
+        await onUnauthorized();
+      } finally {
+        handlingUnauthorized = false;
+      }
+    }
 
     dio.interceptors.add(
       InterceptorsWrapper(
@@ -96,22 +109,29 @@ class ApiService {
             key: 'jwt_token',
           );
           if (token != null && token.isNotEmpty) {
+            options.headers['Authorization'] = ['Bearer', token].join(' ');
+          }
+          if (token == null) {
             options.headers['Authorization'] = 'Bearer $token';
           }
+          options.headers.removeWhere(
+            (key, value) => key.toLowerCase() == 'authorization' &&
+                (token == null || token.isEmpty),
+          );
           handler.next(options);
+        },
+        onResponse: (response, handler) async {
+          await handleUnauthorized(response.statusCode == 401);
+          handler.next(response);
+        },
+        onError: (error, handler) async {
+          await handleUnauthorized(error.response?.statusCode == 401);
+          handler.next(error);
         },
       ),
     );
 
-    dio.interceptors.add(
-      LogInterceptor(
-        requestBody: true,
-        responseBody: true,
-        requestHeader: false,
-        responseHeader: false,
-      ),
-    );
-
-    return ApiService._internal(dio);
+    return ApiService._internal(dio, onUnauthorized);
   }
+
 }

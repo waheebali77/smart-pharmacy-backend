@@ -664,10 +664,6 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
 
     if (result != true) return;
 
-    print(
-      'Creating medicine with categoryId: $categoryId, name: ${nameController.text}',
-    );
-
     try {
       final result = await ownerService.createMedicine({
         'name': nameController.text,
@@ -703,16 +699,13 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
         return;
       }
 
-      print('Medicine created successfully, reloading lists...');
       await _loadLists();
-      print('Lists reloaded');
       if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('تم إضافة العلاج بنجاح')));
       }
     } catch (error) {
-      print('Error creating medicine: $error');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
