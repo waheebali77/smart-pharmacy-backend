@@ -45,13 +45,18 @@ RUN composer install \
 
 COPY . .
 
-RUN mkdir -p storage/framework/cache \
+RUN mkdir -p storage/app/public \
+    storage/framework/cache \
     storage/framework/sessions \
     storage/framework/views \
     bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R ug+rwx storage bootstrap/cache
 
+COPY docker/entrypoint.sh /usr/local/bin/laravel-entrypoint
+RUN chmod +x /usr/local/bin/laravel-entrypoint
+
 EXPOSE 80
 
+ENTRYPOINT ["laravel-entrypoint"]
 CMD ["apache2-foreground"]

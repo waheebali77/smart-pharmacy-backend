@@ -10,3 +10,5 @@
 .env.*
 !.env.example
 .phpunit.result.cache
+/public/storage
+/storage/app/public/*

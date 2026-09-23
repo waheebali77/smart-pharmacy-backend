@@ -1,0 +1,10 @@
+.git
+.env
+.env.*
+!.env.example
+public/storage
+storage/app/public/*
+storage/framework/sessions/*
+storage/logs/*
+mobile_app
+vendor
