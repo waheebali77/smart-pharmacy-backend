@@ -32,6 +32,9 @@ Route::get('health', function () {
     ]);
 });
 
+Route::post('forgot-password', [AuthController::class, 'forgotPasswordOtp']);
+Route::post('reset-password', [AuthController::class, 'resetPasswordOtp']);
+
 Route::prefix('auth')->group(function () {
     // Public routes
     Route::post('register/customer', [AuthController::class, 'registerCustomer']);

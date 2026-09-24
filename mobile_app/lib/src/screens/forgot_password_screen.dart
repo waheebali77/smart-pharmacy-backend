@@ -1,6 +1,5 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
@@ -15,13 +14,13 @@ class ForgotPasswordScreen extends StatefulWidget {
 
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _phoneController = TextEditingController();
+  final _emailController = TextEditingController();
   bool _loading = false;
   String? _error;
 
   @override
   void dispose() {
-    _phoneController.dispose();
+    _emailController.dispose();
     super.dispose();
   }
 
@@ -32,11 +31,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       _error = null;
     });
     try {
-      final phone = _phoneController.text.trim();
-      await context.read<AuthProvider>().authService.requestOtpReset(phone);
+      final email = _emailController.text.trim();
+      await context.read<AuthProvider>().authService.requestPasswordReset(
+        email,
+      );
       if (!mounted) return;
       Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => OtpVerificationScreen(phone: phone)),
+        MaterialPageRoute(builder: (_) => ResetPasswordScreen(email: email)),
       );
     } catch (error) {
       if (mounted) setState(() => _error = _friendlyError(error));
@@ -68,13 +69,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             ),
             const SizedBox(height: 10),
             const Text(
-              'أدخل رقم هاتفك أدناه وسنساعدك على استعادة حسابك.',
+              'أدخل بريدك الإلكتروني وسنرسل لك رمز التحقق.',
               textAlign: TextAlign.center,
               style: TextStyle(color: Color(0xFF718096), height: 1.6),
             ),
             const SizedBox(height: 28),
-            _PhoneField(
-              controller: _phoneController,
+            _EmailField(
+              controller: _emailController,
               onChanged: (_) => setState(() => _error = null),
             ),
             if (_error != null) ...[
@@ -102,269 +103,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 }
 
-class OtpVerificationScreen extends StatefulWidget {
-  const OtpVerificationScreen({super.key, required this.phone});
-  final String phone;
-
-  @override
-  State<OtpVerificationScreen> createState() => _OtpVerificationScreenState();
-}
-
-class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
-  final _otpController = TextEditingController();
-  final _otpFocusNode = FocusNode();
-  Timer? _countdownTimer;
-  int _secondsRemaining = 45;
-  bool _loading = false;
-  bool _resending = false;
-  bool _verificationStarted = false;
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _otpController.addListener(_onOtpChanged);
-    _startCountdown();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _otpFocusNode.requestFocus();
-    });
-  }
-
-  @override
-  void dispose() {
-    _countdownTimer?.cancel();
-    _otpController.removeListener(_onOtpChanged);
-    _otpController.dispose();
-    _otpFocusNode.dispose();
-    super.dispose();
-  }
-
-  void _startCountdown() {
-    _countdownTimer?.cancel();
-    setState(() => _secondsRemaining = 45);
-    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted) return;
-      if (_secondsRemaining <= 1) {
-        timer.cancel();
-        setState(() => _secondsRemaining = 0);
-      } else {
-        setState(() => _secondsRemaining--);
-      }
-    });
-  }
-
-  void _onOtpChanged() {
-    if (!mounted) return;
-    setState(() => _error = null);
-    if (_otpController.text.length == 6 && !_verificationStarted && !_loading) {
-      _verificationStarted = true;
-      _verify();
-    }
-  }
-
-  Future<void> _verify() async {
-    if (_otpController.text.trim().length != 6) {
-      setState(() => _error = 'أدخل رمز التحقق المكون من 6 أرقام');
-      return;
-    }
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-    try {
-      final payload = await context
-          .read<AuthProvider>()
-          .authService
-          .verifyOtpReset(phone: widget.phone, otp: _otpController.text.trim());
-      final token =
-          payload['token']?.toString() ??
-          (payload['data'] is Map
-              ? (payload['data'] as Map)['token']?.toString()
-              : null);
-      if (token == null || token.isEmpty) {
-        throw Exception('لم يتم استلام رمز التحقق من الخادم');
-      }
-      if (!mounted) return;
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder:
-              (_) => ResetPasswordScreen(phone: widget.phone, token: token),
-        ),
-      );
-    } catch (error) {
-      if (mounted) {
-        _verificationStarted = false;
-        setState(
-          () => _error = error.toString().replaceFirst('Exception: ', ''),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
-
-  Future<void> _resendCode() async {
-    if (_secondsRemaining > 0 || _resending) return;
-    setState(() {
-      _resending = true;
-      _error = null;
-    });
-    try {
-      await context.read<AuthProvider>().authService.requestOtpReset(
-        widget.phone,
-      );
-      _otpController.clear();
-      _verificationStarted = false;
-      _startCountdown();
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تم إرسال رمز جديد إلى هاتفك')),
-      );
-    } catch (error) {
-      if (mounted) {
-        setState(
-          () => _error = error.toString().replaceFirst('Exception: ', ''),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _resending = false);
-    }
-  }
-
-  String get _countdownLabel {
-    final minutes = (_secondsRemaining ~/ 60).toString().padLeft(2, '0');
-    final seconds = (_secondsRemaining % 60).toString().padLeft(2, '0');
-    return '$minutes:$seconds';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return _ResetScaffold(
-      title: 'أدخل رمز التحقق',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const _ResetIcon(icon: Icons.sms_outlined),
-          const SizedBox(height: 22),
-          const Text(
-            'أدخل رمز التحقق',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 25, fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            'أرسلنا رمزًا إلى ${widget.phone}. أدخله هنا لتأكيد حسابك.',
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: Color(0xFF718096), height: 1.6),
-          ),
-          const SizedBox(height: 28),
-          GestureDetector(
-            onTap: () => _otpFocusNode.requestFocus(),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(6, (index) {
-                    final value = _otpController.text;
-                    final hasDigit = index < value.length;
-                    return Container(
-                      width: 45,
-                      height: 52,
-                      margin: const EdgeInsets.symmetric(horizontal: 4),
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color:
-                              index == value.length
-                                  ? const Color(0xFF2675D8)
-                                  : const Color(0xFFDCE7F5),
-                          width: index == value.length ? 2 : 1,
-                        ),
-                      ),
-                      child: Text(
-                        hasDigit ? value[index] : '',
-                        style: const TextStyle(
-                          color: Color(0xFF173B4D),
-                          fontSize: 24,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    );
-                  }),
-                ),
-                Opacity(
-                  opacity: 0,
-                  child: SizedBox(
-                    width: 1,
-                    height: 1,
-                    child: TextField(
-                      controller: _otpController,
-                      focusNode: _otpFocusNode,
-                      autofocus: true,
-                      keyboardType: TextInputType.number,
-                      textInputAction: TextInputAction.done,
-                      maxLength: 6,
-                      showCursor: false,
-                      enableSuggestions: false,
-                      autocorrect: false,
-                      decoration: const InputDecoration(
-                        border: InputBorder.none,
-                        counterText: '',
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (_error != null) ...[
-            const SizedBox(height: 10),
-            _ResetError(message: _error!),
-          ],
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                _secondsRemaining > 0
-                    ? 'إعادة إرسال الرمز خلال $_countdownLabel'
-                    : 'لم يصلك الرمز؟',
-                style: const TextStyle(color: Color(0xFF718096)),
-              ),
-              if (_secondsRemaining == 0)
-                TextButton(
-                  onPressed: _resending ? null : _resendCode,
-                  child: Text(_resending ? 'جارٍ الإرسال...' : 'إعادة إرسال'),
-                ),
-            ],
-          ),
-          const SizedBox(height: 22),
-          _PrimaryButton(
-            label: 'تأكيد الرمز',
-            loading: _loading,
-            onPressed: _verify,
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('تغيير رقم الهاتف'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class ResetPasswordScreen extends StatefulWidget {
-  const ResetPasswordScreen({
-    super.key,
-    required this.phone,
-    required this.token,
-  });
-  final String phone;
-  final String token;
+  const ResetPasswordScreen({super.key, required this.email});
+  final String email;
 
   @override
   State<ResetPasswordScreen> createState() => _ResetPasswordScreenState();
@@ -372,6 +113,7 @@ class ResetPasswordScreen extends StatefulWidget {
 
 class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _otp = TextEditingController();
   final _password = TextEditingController();
   final _confirmation = TextEditingController();
   bool _obscurePassword = true;
@@ -381,6 +123,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
   @override
   void dispose() {
+    _otp.dispose();
     _password.dispose();
     _confirmation.dispose();
     super.dispose();
@@ -394,9 +137,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     });
     try {
       final authProvider = context.read<AuthProvider>();
-      await authProvider.authService.resetPasswordPhone(
-        phone: widget.phone,
-        token: widget.token,
+      await authProvider.authService.resetPasswordWithOtp(
+        email: widget.email,
+        otp: _otp.text.trim(),
         password: _password.text,
         confirmation: _confirmation.text,
       );
@@ -407,7 +150,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       );
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
-          builder: (_) => LoginScreen(initialIdentifier: widget.phone),
+          builder: (_) => LoginScreen(initialIdentifier: widget.email),
         ),
         (route) => false,
       );
@@ -425,7 +168,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return _ResetScaffold(
-      title: 'إنشاء كلمة مرور جديدة',
+      title: 'التحقق وإعادة تعيين كلمة المرور',
       child: Form(
         key: _formKey,
         child: Column(
@@ -434,17 +177,35 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
             const _ResetIcon(icon: Icons.password_rounded),
             const SizedBox(height: 22),
             const Text(
-              'رائع!',
+              'تحقق من الرمز وأنشئ كلمة مرور جديدة',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 25, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 10),
             const Text(
-              'أنشئ كلمة مرور جديدة وآمنة لحسابك.',
+              'أدخل رمز التحقق المرسل إلى بريدك الإلكتروني ثم كلمة المرور الجديدة.',
               textAlign: TextAlign.center,
               style: TextStyle(color: Color(0xFF718096)),
             ),
             const SizedBox(height: 28),
+            TextFormField(
+              controller: _otp,
+              keyboardType: TextInputType.number,
+              textInputAction: TextInputAction.next,
+              maxLength: 6,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              validator: (value) {
+                if ((value ?? '').length != 6) {
+                  return 'أدخل رمز التحقق المكون من 6 أرقام';
+                }
+                return null;
+              },
+              decoration: _inputDecoration(
+                'رمز التحقق المكون من 6 أرقام',
+                Icons.sms_outlined,
+              ).copyWith(counterText: ''),
+            ),
+            const SizedBox(height: 16),
             _PasswordField(
               controller: _password,
               label: 'كلمة المرور الجديدة',
@@ -467,6 +228,15 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   () => setState(
                     () => _obscureConfirmation = !_obscureConfirmation,
                   ),
+              validator: (value) {
+                if ((value ?? '').length < 8) {
+                  return 'كلمة المرور يجب أن تكون 8 أحرف على الأقل';
+                }
+                if (value != _password.text) {
+                  return 'كلمتا المرور غير متطابقتين';
+                }
+                return null;
+              },
             ),
             if (_error != null) ...[
               const SizedBox(height: 10),
@@ -525,24 +295,29 @@ class _ResetIcon extends StatelessWidget {
   );
 }
 
-class _PhoneField extends StatelessWidget {
-  const _PhoneField({required this.controller, required this.onChanged});
+class _EmailField extends StatelessWidget {
+  const _EmailField({required this.controller, required this.onChanged});
   final TextEditingController controller;
   final ValueChanged<String> onChanged;
   @override
   Widget build(BuildContext context) => TextFormField(
     controller: controller,
-    keyboardType: TextInputType.phone,
+    keyboardType: TextInputType.emailAddress,
     onChanged: onChanged,
     validator: (value) {
-      final phone = value?.trim() ?? '';
-      if (phone.isEmpty) return 'أدخل رقم الهاتف';
-      if (!RegExp(r'^\+?[0-9]{9,15}$').hasMatch(phone))
-        return 'أدخل رقم هاتف صحيح';
+      final email = value?.trim() ?? '';
+      if (email.isEmpty) {
+        return 'أدخل البريد الإلكتروني';
+      }
+      if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)) {
+        return 'أدخل بريدًا إلكترونيًا صحيحًا';
+      }
       return null;
     },
-    decoration: _inputDecoration('012345678', Icons.phone_outlined).copyWith(
-      prefixText: '🇾🇪 +967  ',
+    decoration: _inputDecoration(
+      'example@email.com',
+      Icons.email_outlined,
+    ).copyWith(
       suffixIcon: IconButton(
         icon: const Icon(Icons.clear),
         onPressed: controller.clear,
@@ -558,22 +333,27 @@ class _PasswordField extends StatelessWidget {
     required this.obscure,
     required this.onToggle,
     this.onChanged,
+    this.validator,
   });
   final TextEditingController controller;
   final String label;
   final bool obscure;
   final VoidCallback onToggle;
   final ValueChanged<String>? onChanged;
+  final String? Function(String?)? validator;
   @override
   Widget build(BuildContext context) => TextFormField(
     controller: controller,
     obscureText: obscure,
     onChanged: onChanged,
-    validator: (value) {
-      if ((value ?? '').length < 8)
-        return 'كلمة المرور يجب أن تكون 8 أحرف على الأقل';
-      return null;
-    },
+    validator:
+        validator ??
+        (value) {
+          if ((value ?? '').length < 8) {
+            return 'كلمة المرور يجب أن تكون 8 أحرف على الأقل';
+          }
+          return null;
+        },
     decoration: _inputDecoration(label, Icons.lock_outline).copyWith(
       suffixIcon: IconButton(
         icon: Icon(

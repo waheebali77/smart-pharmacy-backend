@@ -206,6 +206,11 @@ class AuthService
         $this->repository->updatePassword($user, $data['password']);
     }
 
+    public function resetPasswordForUser(AppUser $user, string $password): void
+    {
+        $this->repository->updatePassword($user, $password);
+    }
+
     private function currentAppUser(): ?AppUser
     {
         $user = JWTAuth::parseToken()->authenticate();

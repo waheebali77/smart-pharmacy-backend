@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 use App\Exceptions\PharmacySubscriptionExpiredException;
 
@@ -431,6 +432,100 @@ class AuthController extends BaseController
                 'error' => $e->getMessage(),
             ], 500);
         }
+    }
+
+    public function forgotPasswordOtp(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => ['required', 'string', 'email'],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $email = strtolower(trim($validator->validated()['email']));
+        $user = \App\Models\AppUser::where('email', $email)
+            ->where('is_active', true)
+            ->first();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No account was found for this email address.',
+            ], 404);
+        }
+
+        $otp = (string) random_int(100000, 999999);
+        Cache::put("password_reset_email_otp:{$email}", [
+            'user_id' => $user->id,
+            'otp' => Hash::make($otp),
+        ], now()->addMinutes(5));
+
+        Mail::raw(
+            "Your password reset code is {$otp}. It expires in 5 minutes.",
+            function ($message) use ($email) {
+                $message->to($email)->subject('Password reset code');
+            }
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Password reset code sent successfully.',
+        ]);
+    }
+
+    public function resetPasswordOtp(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => ['required', 'string', 'email'],
+            'otp' => ['required', 'digits:6'],
+            'password' => ['required', 'string', 'min:8', 'same:password_confirmation'],
+            'password_confirmation' => ['required', 'string'],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $data = $validator->validated();
+        $email = strtolower(trim($data['email']));
+        $record = Cache::get("password_reset_email_otp:{$email}");
+
+        if (!is_array($record) || !Hash::check($data['otp'], $record['otp'] ?? '')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'The OTP is invalid or expired.',
+            ], 422);
+        }
+
+        $user = \App\Models\AppUser::whereKey($record['user_id'])
+            ->where('email', $email)
+            ->where('is_active', true)
+            ->first();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'The account does not exist or is inactive.',
+            ], 404);
+        }
+
+        $this->authService->resetPasswordForUser($user, $data['password']);
+        Cache::forget("password_reset_email_otp:{$email}");
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Password reset successfully.',
+        ]);
     }
 
     public function requestOtpReset(Request $request)

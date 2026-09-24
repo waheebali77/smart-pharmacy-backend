@@ -147,6 +147,36 @@ class AuthService {
     return _authActionPayload(response);
   }
 
+  Future<Map<String, dynamic>> requestPasswordReset(String email) async {
+    final response = await ApiService.requestWithFallback(
+      dio,
+      '/forgot-password',
+      method: 'POST',
+      data: {'email': email.trim()},
+    );
+    return _authActionPayload(response);
+  }
+
+  Future<Map<String, dynamic>> resetPasswordWithOtp({
+    required String email,
+    required String otp,
+    required String password,
+    required String confirmation,
+  }) async {
+    final response = await ApiService.requestWithFallback(
+      dio,
+      '/reset-password',
+      method: 'POST',
+      data: {
+        'email': email.trim(),
+        'otp': otp.trim(),
+        'password': password,
+        'password_confirmation': confirmation,
+      },
+    );
+    return _authActionPayload(response);
+  }
+
   Future<Map<String, dynamic>> verifyOtpReset({
     required String phone,
     required String otp,
