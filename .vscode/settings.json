@@ -1,4 +1,5 @@
 {
     "Codegeex.SidebarUI.LanguagePreference": "English",
-    "Codegeex.RepoIndex": true
+    "Codegeex.RepoIndex": true,
+    "github.copilot.chat.localIndex.enabled": true
 }

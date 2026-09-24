@@ -34,6 +34,7 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
   int _selectedIndex = 0;
   String _medicinesFilter = 'all';
   final _scaffoldKey = GlobalKey<ScaffoldState>();
+  final _medicinesScreenKey = GlobalKey<OwnerMedicinesScreenState>();
   late final OwnerService ownerService;
   bool _initialized = false;
   bool _loading = true;
@@ -890,6 +891,15 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
     );
   }
 
+  Future<void> _openMedicineCatalog() async {
+    final medicinesScreen = _medicinesScreenKey.currentState;
+    if (medicinesScreen != null) {
+      await medicinesScreen.openCatalog();
+    } else {
+      await _addMedicine();
+    }
+  }
+
   Future<void> _editMedicine(Medicine medicine) async {
     final name = TextEditingController(text: medicine.name);
     final price = TextEditingController(text: medicine.price.toString());
@@ -1653,7 +1663,7 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
         onOrdersPressed: () => _onItemTapped(3),
       ),
       OwnerMedicinesScreen(
-        key: ValueKey(_medicinesFilter),
+        key: _medicinesScreenKey,
         medicines: _medicines,
         initialFilter: _medicinesFilter,
         onAddMedicine: _addMedicine,
@@ -1690,7 +1700,7 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
                 onMenuPressed: () => _scaffoldKey.currentState?.openDrawer(),
                 onAddPressed:
                     _selectedIndex == 1
-                        ? _addMedicine
+                        ? _openMedicineCatalog
                         : _selectedIndex == 2
                         ? _addOffer
                         : null,
@@ -1778,7 +1788,7 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
                       title: 'إضافة دواء',
                       onTap: () {
                         Navigator.of(context).pop();
-                        _addMedicine();
+                        _openMedicineCatalog();
                       },
                     ),
                     _drawerTile(

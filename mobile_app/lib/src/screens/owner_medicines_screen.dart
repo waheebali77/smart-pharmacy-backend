@@ -24,14 +24,14 @@ class OwnerMedicinesScreen extends StatefulWidget {
   });
 
   @override
-  State<OwnerMedicinesScreen> createState() => _OwnerMedicinesScreenState();
+  State<OwnerMedicinesScreen> createState() => OwnerMedicinesScreenState();
 }
 
 class _CatalogCustomAction {
   const _CatalogCustomAction();
 }
 
-class _OwnerMedicinesScreenState extends State<OwnerMedicinesScreen> {
+class OwnerMedicinesScreenState extends State<OwnerMedicinesScreen> {
   final _searchController = TextEditingController();
   late String _filter;
 
@@ -39,6 +39,14 @@ class _OwnerMedicinesScreenState extends State<OwnerMedicinesScreen> {
   void initState() {
     super.initState();
     _filter = widget.initialFilter;
+  }
+
+  @override
+  void didUpdateWidget(covariant OwnerMedicinesScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialFilter != widget.initialFilter) {
+      _filter = widget.initialFilter;
+    }
   }
 
   @override
@@ -81,7 +89,7 @@ class _OwnerMedicinesScreenState extends State<OwnerMedicinesScreen> {
     }).toList();
   }
 
-  Future<void> _openCatalog() async {
+  Future<void> openCatalog() async {
     final queryController = TextEditingController();
     List<Medicine> results = [];
     bool loading = false;
